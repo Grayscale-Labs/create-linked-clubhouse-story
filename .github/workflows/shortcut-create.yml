@@ -13,3 +13,5 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           shortcut-token: ${{ secrets.SHORTCUT_TOKEN }}
           project-name: app.gograyscale.com
+          opened-state-name: PR Open
+          merged-state-name: Ready for QA

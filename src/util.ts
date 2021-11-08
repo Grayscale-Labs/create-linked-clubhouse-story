@@ -4,6 +4,7 @@ import { PullRequestEvent } from "@octokit/webhooks-types";
 import { HttpClient } from "@actions/http-client";
 import Mustache from "mustache";
 import {
+  ShortcutGroup,
   ShortcutMember,
   ShortcutProject,
   ShortcutStory,
@@ -241,6 +242,33 @@ export async function getShortcutProjectByName(
   }
 }
 
+export async function getShortcutGroupByName(
+  groupName: string,
+  http: HttpClient
+): Promise<ShortcutGroup | undefined> {
+  const SHORTCUT_TOKEN = core.getInput("shortcut-token", {
+    required: true,
+  });
+  try {
+    const groupsResponse = await http.getJson<ShortcutGroup[]>(
+      `https://api.app.shortcut.com/api/v3/groups?token=${SHORTCUT_TOKEN}`
+    );
+    const groups = groupsResponse.result;
+    if (!groups) {
+      core.setFailed(
+        `HTTP ${groupsResponse.statusCode} https://api.app.shortcut.com/api/v3/groups`
+      );
+      return;
+    }
+    return groups.find((group) => group.name === groupName);
+  } catch (err) {
+    core.setFailed(
+      `HTTP ${err.statusCode} https://api.app.shortcut.com/api/v3/groups\n${err.message}`
+    );
+    return;
+  }
+}
+
 export async function getShortcutWorkflowState(
   stateName: string,
   http: HttpClient,
@@ -284,6 +312,7 @@ export async function createShortcutStory(
   const PROJECT_NAME = core.getInput("project-name", { required: true });
   const STATE_NAME = core.getInput("opened-state-name");
   const TITLE_TEMPLATE = core.getInput("story-title-template");
+  const TEAM_NAME = core.getInput("team-name");
   const title = Mustache.render(TITLE_TEMPLATE, { payload });
 
   const DESCRIPTION_TEMPLATE = core.getInput("story-description-template");
@@ -314,6 +343,12 @@ export async function createShortcutStory(
     );
     if (workflowState) {
       body.workflow_state_id = workflowState.id;
+    }
+  }
+  if (TEAM_NAME) {
+    const shortcutGroup = await getShortcutGroupByName(TEAM_NAME, http);
+    if (shortcutGroup) {
+      body.group_id = shortcutGroup.id;
     }
   }
 

@@ -62,6 +62,18 @@ export interface ShortcutProject {
   updated_at: string | null;
 }
 
+/** Maps to a 'team' in the Shortcut UI */
+export interface ShortcutGroup {
+  app_url: string;
+  archived: boolean;
+  color: string | null;
+  color_key: string | null;
+  description: string;
+  entity_type: "group";
+  id: string;
+  name: string;
+}
+
 /** Group of Projects with the same Workflow. */
 export interface ShortcutTeam {
   entity_type: "team";
@@ -304,6 +316,7 @@ export interface ShortcutStory {
   external_links: string[];
   files: ShortcutFile[];
   follower_ids: string[];
+  group_id: string | null;
   group_mention_ids: string[];
   id: number;
   iteration_id: number | null;
@@ -375,6 +388,7 @@ export interface ShortcutCreateStoryBody {
   external_links?: string[];
   file_ids?: number[];
   follower_ids?: string[];
+  group_id?: string | null;
   iteration_id?: number | null;
   labels?: ShortcutCreateLabelParams[];
   linked_file_ids?: number[];
