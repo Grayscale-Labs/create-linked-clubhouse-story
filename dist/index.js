@@ -364,7 +364,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.delay = exports.getShortcutIterationInfo = exports.getLatestMatchingShortcutIteration = exports.updateShortcutStoryById = exports.addCommentToPullRequest = exports.getShortcutStoryIdFromPullRequest = exports.getShortcutURLFromPullRequest = exports.getShortcutStoryIdFromBranchName = exports.createShortcutStory = exports.getShortcutWorkflowState = exports.getShortcutProjectByName = exports.getShortcutProject = exports.getShortcutStoryById = exports.getShortcutUserId = exports.getUserListAsSet = exports.shouldProcessPullRequestForUser = exports.SHORTCUT_BRANCH_NAME_REGEXP = exports.SHORTCUT_STORY_URL_REGEXP = void 0;
+exports.delay = exports.getShortcutIterationInfo = exports.getLatestMatchingShortcutIteration = exports.updateShortcutStoryById = exports.addCommentToPullRequest = exports.getShortcutStoryIdFromPullRequest = exports.getShortcutURLFromPullRequest = exports.getShortcutStoryIdFromBranchName = exports.createShortcutStory = exports.getShortcutWorkflowState = exports.getShortcutGroupByName = exports.getShortcutProjectByName = exports.getShortcutProject = exports.getShortcutStoryById = exports.getShortcutUserId = exports.getUserListAsSet = exports.shouldProcessPullRequestForUser = exports.SHORTCUT_BRANCH_NAME_REGEXP = exports.SHORTCUT_STORY_URL_REGEXP = void 0;
 const core = __importStar(__nccwpck_require__(186));
 const github = __importStar(__nccwpck_require__(438));
 const mustache_1 = __importDefault(__nccwpck_require__(272));
@@ -542,6 +542,27 @@ function getShortcutProjectByName(projectName, http) {
     });
 }
 exports.getShortcutProjectByName = getShortcutProjectByName;
+function getShortcutGroupByName(groupName, http) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const SHORTCUT_TOKEN = core.getInput("shortcut-token", {
+            required: true,
+        });
+        try {
+            const groupsResponse = yield http.getJson(`https://api.app.shortcut.com/api/v3/groups?token=${SHORTCUT_TOKEN}`);
+            const groups = groupsResponse.result;
+            if (!groups) {
+                core.setFailed(`HTTP ${groupsResponse.statusCode} https://api.app.shortcut.com/api/v3/groups`);
+                return;
+            }
+            return groups.find((group) => group.name === groupName);
+        }
+        catch (err) {
+            core.setFailed(`HTTP ${err.statusCode} https://api.app.shortcut.com/api/v3/groups\n${err.message}`);
+            return;
+        }
+    });
+}
+exports.getShortcutGroupByName = getShortcutGroupByName;
 function getShortcutWorkflowState(stateName, http, project) {
     return __awaiter(this, void 0, void 0, function* () {
         const SHORTCUT_TOKEN = core.getInput("shortcut-token", {
@@ -570,6 +591,7 @@ function createShortcutStory(payload, http) {
         const PROJECT_NAME = core.getInput("project-name", { required: true });
         const STATE_NAME = core.getInput("opened-state-name");
         const TITLE_TEMPLATE = core.getInput("story-title-template");
+        const TEAM_NAME = core.getInput("team-name");
         const title = mustache_1.default.render(TITLE_TEMPLATE, { payload });
         const DESCRIPTION_TEMPLATE = core.getInput("story-description-template");
         const description = mustache_1.default.render(DESCRIPTION_TEMPLATE, { payload });
@@ -593,6 +615,12 @@ function createShortcutStory(payload, http) {
             const workflowState = yield getShortcutWorkflowState(STATE_NAME, http, shortcutProject);
             if (workflowState) {
                 body.workflow_state_id = workflowState.id;
+            }
+        }
+        if (TEAM_NAME) {
+            const shortcutGroup = yield getShortcutGroupByName(TEAM_NAME, http);
+            if (shortcutGroup) {
+                body.group_id = shortcutGroup.id;
             }
         }
         try {

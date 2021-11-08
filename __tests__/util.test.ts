@@ -66,6 +66,19 @@ test("getShortcutProjectByName", async () => {
   scope.done();
 });
 
+test("getShortcutGroupByName", async () => {
+  const scope = nock("https://api.app.shortcut.com")
+    .get("/api/v3/groups")
+    .query(true)
+    .reply(200, [{ id: "abc", name: "fake-group" }]);
+
+  const http = new HttpClient();
+  const group = await util.getShortcutGroupByName("fake-group", http);
+  expect(group).toEqual({ id: "abc", name: "fake-group" });
+
+  scope.done();
+});
+
 test("getShortcutWorkflowState", async () => {
   const scope = nock("https://api.app.shortcut.com")
     .get("/api/v3/teams/123")
@@ -148,6 +161,26 @@ describe("createShortcutStory", () => {
     scope
       .post("/api/v3/stories", (body) => {
         expect(body.name).toEqual("Amazing new feature");
+        expect(body.description).toEqual(
+          "Please pull these awesome changes in!"
+        );
+        return true;
+      })
+      .query(true)
+      .reply(200, { id: 1 });
+    await util.createShortcutStory(payload as any, http);
+  });
+
+  test("with a team name", async () => {
+    scope
+      .get("/api/v3/groups")
+      .query(true)
+      .reply(200, [{ id: "abc-123", name: "Engineering" }]);
+
+    process.env["INPUT_TEAM-NAME"] = "Engineering";
+    scope
+      .post("/api/v3/stories", (body) => {
+        expect(body.group_id).toEqual("abc-123");
         expect(body.description).toEqual(
           "Please pull these awesome changes in!"
         );

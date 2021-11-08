@@ -13,6 +13,8 @@ inputs:
   project-name:
     description: The name of the Shortcut.com project to create stories in
     required: true
+  team-name:
+    description: The name of the Shortcut team to assign to the new story.
   opened-state-name:
     description: The name of the workflow state for Shortcut stories when a pull request is created.
   closed-state-name:
